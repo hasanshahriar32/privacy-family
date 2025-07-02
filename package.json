@@ -6,9 +6,10 @@
   "scripts": {
     "build": "echo 'Building extension...' && npm run validate",
     "validate": "echo 'Validating manifest...' && node -e \"console.log('Manifest valid:', JSON.parse(require('fs').readFileSync('manifest.json', 'utf8')))\"",
+    "build:prepare": "rm -rf build && mkdir build && cp manifest.json background.js blocked.html content.js options.html popup.html build/ && cp -r icons styles scripts build/",
     "pack": "echo 'Packing extension...' && npx bestzip extension.zip manifest.json background.js blocked.html content.js options.html popup.html icons styles scripts",
     "dev": "echo 'Development mode - Load unpacked extension in Chrome'",
-    "crx": "npx crx pack -p key.pem -o extension.crx ."
+    "crx": "npm run build:prepare && npx crx3 -p key.pem -o extension.crx build && rm -rf build"
   },
   "keywords": [
     "browser-extension",
@@ -26,7 +27,7 @@
   },
   "devDependencies": {
     "bestzip": "^2.2.1",
-    "crx": "^5.0.1",
+    "crx3": "^1.1.3",
     "web-ext": "^7.0.0"
   },
   "engines": {
