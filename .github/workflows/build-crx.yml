@@ -44,12 +44,14 @@ jobs:
         with:
           name: family-privacy-extension-crx
           path: extension.crx
+          retention-days: 7
 
       - name: Upload .zip artifact
         uses: actions/upload-artifact@v4
         with:
           name: family-privacy-extension-zip
           path: extension.zip
+          retention-days: 7
 
       - name: Send .crx file to Telegram
         uses: appleboy/telegram-action@master
