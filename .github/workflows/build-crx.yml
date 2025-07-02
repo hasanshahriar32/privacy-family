@@ -24,10 +24,6 @@ jobs:
         run: |
           if [ -f package.json ]; then npm install; fi
 
-      - name: Zip extension source
-        run: |
-          zip -r extension.zip . -x 'node_modules/*' '.git/*' '*.zip' '*.crx' '.github/*'
-
       - name: Generate private key (if not present)
         run: |
           if [ ! -f key.pem ]; then openssl genrsa -out key.pem 2048; fi
@@ -37,7 +33,11 @@ jobs:
 
       - name: Build .crx file using crx
         run: |
-          npx crx pack -k key.pem -o extension.crx extension.zip
+          npx crx pack -p key.pem -o extension.crx .
+
+      - name: Zip extension source for distribution
+        run: |
+          npx bestzip extension.zip manifest.json background.js blocked.html content.js options.html popup.html icons styles scripts
 
       - name: Upload .crx artifact
         uses: actions/upload-artifact@v4
