@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family Privacy Extension - Settings</title>
+  <link rel="stylesheet" href="styles/options.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <img src="icons/icon48.png" alt="Family Privacy" class="logo">
+        <div>
+          <h1>Family Privacy Extension</h1>
+          <p>Configure profiles and content filtering settings</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-tab="profiles">👤 Profiles</button>
+      <button class="nav-tab" data-tab="categories">🏷️ Categories</button>
+      <button class="nav-tab" data-tab="sites">🌐 Sites</button>
+      <button class="nav-tab" data-tab="time">⏰ Time Restrictions</button>
+      <button class="nav-tab" data-tab="settings">⚙️ Settings</button>
+      <button class="nav-tab" data-tab="activity">📊 Activity</button>
+    </nav>
+
+    <!-- Tab Content -->
+    <main class="main-content">
+      <!-- Profiles Tab -->
+      <div id="profiles" class="tab-content active">
+        <div class="section">
+          <div class="section-header">
+            <h2>Manage Profiles</h2>
+            <button id="addProfile" class="btn-primary">+ Add Profile</button>
+          </div>
+          <p class="section-description">
+            Create different profiles for family members with customized restrictions and settings.
+          </p>
+          <div id="profilesList" class="profiles-list">
+            <!-- Profiles will be loaded here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Categories Tab -->
+      <div id="categories" class="tab-content">
+        <div class="section">
+          <h2>Content Categories</h2>
+          <p class="section-description">
+            Configure which types of content should be blocked for the selected profile.
+          </p>
+          <div class="profile-selector-container">
+            <label for="categoryProfile">Configure restrictions for:</label>
+            <select id="categoryProfile" class="profile-select">
+              <option value="">Select a profile...</option>
+            </select>
+          </div>
+          <div id="categoriesGrid" class="categories-grid">
+            <!-- Categories will be loaded here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Sites Tab -->
+      <div id="sites" class="tab-content">
+        <div class="section">
+          <h2>Site-Specific Rules</h2>
+          <p class="section-description">
+            Manually allow or block specific websites regardless of their category.
+          </p>
+          <div class="profile-selector-container">
+            <label for="sitesProfile">Configure sites for:</label>
+            <select id="sitesProfile" class="profile-select">
+              <option value="">Select a profile...</option>
+            </select>
+          </div>
+          
+          <div class="sites-section">
+            <div class="sites-column">
+              <h3>🟢 Allowed Sites</h3>
+              <div class="add-site">
+                <input type="text" id="allowedSiteInput" placeholder="Enter domain (e.g., example.com)">
+                <button id="addAllowedSite" class="btn-success">Add</button>
+              </div>
+              <ul id="allowedSitesList" class="sites-list">
+                <!-- Allowed sites will be loaded here -->
+              </ul>
+            </div>
+            
+            <div class="sites-column">
+              <h3>🔴 Blocked Sites</h3>
+              <div class="add-site">
+                <input type="text" id="blockedSiteInput" placeholder="Enter domain (e.g., example.com)">
+                <button id="addBlockedSite" class="btn-danger">Add</button>
+              </div>
+              <ul id="blockedSitesList" class="sites-list">
+                <!-- Blocked sites will be loaded here -->
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Time Restrictions Tab -->
+      <div id="time" class="tab-content">
+        <div class="section">
+          <h2>Time Restrictions</h2>
+          <p class="section-description">
+            Set time-based restrictions for when browsing is allowed.
+          </p>
+          <div class="profile-selector-container">
+            <label for="timeProfile">Configure time restrictions for:</label>
+            <select id="timeProfile" class="profile-select">
+              <option value="">Select a profile...</option>
+            </select>
+          </div>
+          
+          <div id="timeRestrictionsContainer" class="time-restrictions">
+            <!-- Time restrictions will be loaded here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Tab -->
+      <div id="settings" class="tab-content">
+        <div class="section">
+          <h2>Extension Settings</h2>
+          <p class="section-description">
+            Configure global extension settings and API connection.
+          </p>
+          
+          <div class="settings-grid">
+            <div class="setting-item">
+              <label for="apiEndpoint">Backend API Endpoint:</label>
+              <input type="url" id="apiEndpoint" placeholder="https://your-api.com/api">
+              <small>URL where the extension will send browsing data for analysis</small>
+            </div>
+            
+            <div class="setting-item">
+              <label for="enableLogging">
+                <input type="checkbox" id="enableLogging">
+                Enable Activity Logging
+              </label>
+              <small>Log browsing activity for monitoring and reporting</small>
+            </div>
+            
+            <div class="setting-item">
+              <label for="strictMode">
+                <input type="checkbox" id="strictMode">
+                Strict Mode
+              </label>
+              <small>Block unknown or unclassified websites by default</small>
+            </div>
+            
+            <div class="setting-item">
+              <label for="notifications">
+                <input type="checkbox" id="notifications">
+                Enable Notifications
+              </label>
+              <small>Show notifications when sites are blocked</small>
+            </div>
+          </div>
+          
+          <div class="settings-actions">
+            <button id="saveSettings" class="btn-primary">Save Settings</button>
+            <button id="resetSettings" class="btn-secondary">Reset to Defaults</button>
+            <button id="exportData" class="btn-secondary">Export Data</button>
+            <button id="importData" class="btn-secondary">Import Data</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Tab -->
+      <div id="activity" class="tab-content">
+        <div class="section">
+          <h2>Browsing Activity</h2>
+          <p class="section-description">
+            View detailed browsing activity and statistics.
+          </p>
+          
+          <div class="activity-filters">
+            <select id="activityProfile">
+              <option value="">All Profiles</option>
+            </select>
+            <input type="date" id="activityDate">
+            <button id="exportActivity" class="btn-secondary">Export</button>
+          </div>
+          
+          <div id="activityTable" class="activity-table">
+            <!-- Activity data will be loaded here -->
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal for Profile Creation/Editing -->
+  <div id="profileModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle">Add Profile</h3>
+        <span class="close">&times;</span>
+      </div>
+      <div class="modal-body">
+        <form id="profileForm">
+          <div class="form-group">
+            <label for="profileName">Profile Name:</label>
+            <input type="text" id="profileName" required>
+          </div>
+          <div class="form-group">
+            <label for="profileDescription">Description (optional):</label>
+            <textarea id="profileDescription" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="isDefaultProfile">
+              Set as default profile
+            </label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="cancelProfile" class="btn-secondary">Cancel</button>
+        <button type="submit" form="profileForm" id="saveProfile" class="btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="scripts/options.js"></script>
+</body>
+</html>

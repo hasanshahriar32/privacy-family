@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family Privacy Extension</title>
+  <link rel="stylesheet" href="styles/popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <img src="icons/icon32.png" alt="Family Privacy" class="logo">
+      <h1>Family Privacy</h1>
+    </div>
+
+    <!-- Current Status -->
+    <div class="status-section">
+      <div class="current-site">
+        <span class="label">Current Site:</span>
+        <span id="currentDomain">Loading...</span>
+        <span id="siteStatus" class="status-badge">Checking...</span>
+      </div>
+    </div>
+
+    <!-- Profile Selection -->
+    <div class="section">
+      <h3>Active Profile</h3>
+      <div class="profile-selector">
+        <select id="profileSelect">
+          <option value="">Loading profiles...</option>
+        </select>
+        <button id="manageProfiles" class="btn-secondary">Manage</button>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="section">
+      <h3>Quick Actions</h3>
+      <div class="quick-actions">
+        <button id="allowCurrentSite" class="btn-success">
+          ✓ Allow This Site
+        </button>
+        <button id="blockCurrentSite" class="btn-danger">
+          ✕ Block This Site
+        </button>
+        <button id="viewActivity" class="btn-secondary">
+          📊 View Activity
+        </button>
+        <button id="openSettings" class="btn-secondary">
+          ⚙️ Settings
+        </button>
+      </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="section">
+      <h3>Today's Statistics</h3>
+      <div class="stats">
+        <div class="stat-item">
+          <span class="stat-number" id="sitesVisited">0</span>
+          <span class="stat-label">Sites Visited</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number" id="sitesBlocked">0</span>
+          <span class="stat-label">Sites Blocked</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number" id="timeActive">0m</span>
+          <span class="stat-label">Active Time</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="section">
+      <h3>Recent Activity</h3>
+      <div id="recentActivity" class="activity-list">
+        <div class="activity-item loading">Loading recent activity...</div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <small>Family Privacy Extension v1.0.0</small>
+    </div>
+  </div>
+
+  <script src="scripts/popup.js"></script>
+</body>
+</html>

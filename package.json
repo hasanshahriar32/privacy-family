@@ -1,0 +1,32 @@
+{
+  "name": "family-privacy-extension",
+  "version": "1.0.0",
+  "description": "A browser extension to help families control and monitor web browsing activities with customizable profiles and content filtering",
+  "main": "background.js",
+  "scripts": {
+    "build": "echo 'Building extension...' && npm run validate",
+    "validate": "echo 'Validating manifest...' && node -e \"console.log('Manifest valid:', JSON.parse(require('fs').readFileSync('manifest.json', 'utf8')))\"",
+    "pack": "echo 'Packing extension...' && zip -r family-privacy-extension.zip . -x node_modules/\\* .git/\\* *.zip",
+    "dev": "echo 'Development mode - Load unpacked extension in Chrome'"
+  },
+  "keywords": [
+    "browser-extension",
+    "parental-controls",
+    "content-filtering",
+    "family-safety",
+    "privacy",
+    "web-monitoring"
+  ],
+  "author": "Family Privacy Extension Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/family-privacy-extension.git"
+  },
+  "devDependencies": {
+    "web-ext": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
