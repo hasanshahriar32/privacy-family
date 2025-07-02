@@ -1,0 +1,54 @@
+name: Build and Package Chrome Extension
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-and-crx:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install zip and openssl
+        run: sudo apt-get update && sudo apt-get install -y zip openssl
+
+      - name: Install dependencies (if any)
+        run: |
+          if [ -f package.json ]; then npm install; fi
+
+      - name: Zip extension source
+        run: |
+          zip -r extension.zip . -x 'node_modules/*' '.git/*' '*.zip' '*.crx' '.github/*'
+
+      - name: Generate private key (if not present)
+        run: |
+          if [ ! -f key.pem ]; then openssl genrsa -out key.pem 2048; fi
+
+      - name: Download crx3 tool
+        run: |
+          wget -O crx3.py https://raw.githubusercontent.com/oncletom/crx3/master/bin/crx3.py
+          chmod +x crx3.py
+
+      - name: Build .crx file
+        run: |
+          python3 crx3.py extension.zip key.pem extension.crx
+
+      - name: Upload .crx artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: family-privacy-extension-crx
+          path: extension.crx
+
+      - name: Upload .zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: family-privacy-extension-zip
+          path: extension.zip
