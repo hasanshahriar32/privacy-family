@@ -50,3 +50,30 @@ jobs:
         with:
           name: family-privacy-extension-zip
           path: extension.zip
+
+      - name: Send .crx file to Telegram
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_USER_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            🚀 **Chrome Extension Build Complete!**
+            
+            📦 **Repository:** ${{ github.repository }}
+            🌿 **Branch:** ${{ github.ref_name }}
+            💾 **Commit:** ${{ github.sha }}
+            👤 **Author:** ${{ github.actor }}
+            
+            ✅ Extension .crx file is ready for installation!
+          document: extension.crx
+
+      - name: Send .zip file to Telegram
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_USER_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            📋 **Extension Source Package**
+            
+            This is the distributable zip file containing all extension source files.
+          document: extension.zip
