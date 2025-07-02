@@ -6,9 +6,9 @@
   "scripts": {
     "build": "echo 'Building extension...' && npm run validate",
     "validate": "echo 'Validating manifest...' && node -e \"console.log('Manifest valid:', JSON.parse(require('fs').readFileSync('manifest.json', 'utf8')))\"",
-    "pack": "echo 'Packing extension...' && zip -r family-privacy-extension.zip . -x node_modules/\\* .git/\\* *.zip",
+    "pack": "echo 'Packing extension...' && npx bestzip extension.zip * --ignore=node_modules --ignore=.git --ignore=*.zip",
     "dev": "echo 'Development mode - Load unpacked extension in Chrome'",
-    "crx": "npx crx pack -k key.pem -o extension.crx extension.zip"
+    "crx": "npx crx pack -p key.pem -o extension.crx extension.zip"
   },
   "keywords": [
     "browser-extension",
@@ -25,8 +25,9 @@
     "url": "https://github.com/your-username/family-privacy-extension.git"
   },
   "devDependencies": {
-    "web-ext": "^7.0.0",
-    "crx": "^5.0.1"
+    "bestzip": "^2.2.1",
+    "crx": "^5.0.1",
+    "web-ext": "^7.0.0"
   },
   "engines": {
     "node": ">=14.0.0"
