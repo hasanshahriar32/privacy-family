@@ -8,7 +8,7 @@
     "validate": "echo 'Validating manifest...' && node -e \"console.log('Manifest valid:', JSON.parse(require('fs').readFileSync('manifest.json', 'utf8')))\"",
     "pack": "echo 'Packing extension...' && zip -r family-privacy-extension.zip . -x node_modules/\\* .git/\\* *.zip",
     "dev": "echo 'Development mode - Load unpacked extension in Chrome'",
-    "crx": "npx crx3 --key=key.pem --crx=extension.crx extension.zip"
+    "crx": "npx crx pack -k key.pem -o extension.crx extension.zip"
   },
   "keywords": [
     "browser-extension",
@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "web-ext": "^7.0.0",
-    "node-crx3": "^1.7.0"
+    "crx": "^5.0.1"
   },
   "engines": {
     "node": ">=14.0.0"

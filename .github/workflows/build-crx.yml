@@ -32,12 +32,12 @@ jobs:
         run: |
           if [ ! -f key.pem ]; then openssl genrsa -out key.pem 2048; fi
 
-      - name: Install node-crx3
-        run: npm install node-crx3 --save-dev
+      - name: Install crx npm package
+        run: npm install crx --save-dev
 
-      - name: Build .crx file using node-crx3
+      - name: Build .crx file using crx
         run: |
-          npx crx3 --key=key.pem --crx=extension.crx extension.zip
+          npx crx pack -k key.pem -o extension.crx extension.zip
 
       - name: Upload .crx artifact
         uses: actions/upload-artifact@v4
