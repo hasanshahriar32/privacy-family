@@ -69,13 +69,13 @@ jobs:
             ✅ Extension .crx file is ready for installation!
           document: extension.crx
 
-      - name: Send .zip file to Telegram
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_USER_ID }}
-          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          message: |
-            📋 **Extension Source Package**
+    #   - name: Send .zip file to Telegram
+    #     uses: appleboy/telegram-action@master
+    #     with:
+    #       to: ${{ secrets.TELEGRAM_USER_ID }}
+    #       token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+    #       message: |
+    #         📋 **Extension Source Package**
             
-            This is the distributable zip file containing all extension source files.
-          document: extension.zip
+    #         This is the distributable zip file containing all extension source files.
+    #       document: extension.zip
