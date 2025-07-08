@@ -15,43 +15,56 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
+          cache: 'npm'
 
-      - name: Install zip and openssl
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Build extension
+        run: npm run build
+
+      - name: Install zip and openssl for CRX creation
         run: sudo apt-get update && sudo apt-get install -y zip openssl
-
-      - name: Install dependencies (if any)
-        run: |
-          if [ -f package.json ]; then npm install; fi
 
       - name: Generate private key (if not present)
         run: |
           if [ ! -f key.pem ]; then openssl genrsa -out key.pem 2048; fi
 
-      - name: Install crx3 npm package
-        run: npm install crx3 --save-dev
+      - name: Install crx3 for packaging
+        run: npm install -g crx3
 
-      - name: Build .crx file using crx3
+      - name: Create CRX file
         run: |
-          npm run crx
+          crx3 --private-key key.pem --extension dist --output extension.crx
 
-      - name: Zip extension source for distribution
+      - name: Create ZIP distribution
         run: |
-          npm run pack
+          cd dist && zip -r ../extension.zip . && cd ..
 
       - name: Upload .crx artifact
         uses: actions/upload-artifact@v4
         with:
-          name: family-privacy-extension-crx
+          name: family-privacy-extension-crx-v${{ github.run_number }}
           path: extension.crx
-          retention-days: 7
+          retention-days: 30
 
       - name: Upload .zip artifact
         uses: actions/upload-artifact@v4
         with:
-          name: family-privacy-extension-zip
+          name: family-privacy-extension-zip-v${{ github.run_number }}
           path: extension.zip
-          retention-days: 7
+          retention-days: 30
+
+      - name: Upload dist folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: family-privacy-extension-dist-v${{ github.run_number }}
+          path: dist/
+          retention-days: 30
 
       - name: Send .crx file to Telegram
         uses: appleboy/telegram-action@master
@@ -66,6 +79,13 @@ jobs:
             🌿 *Branch:* `${{ github.ref_name }}`
             💾 *Commit:* `${{ github.sha }}`
             👤 *Author:* `${{ github.actor }}`
+            🏗️ *Build:* `#${{ github.run_number }}`
+            
+            ✨ *New Features:*
+            • Modern Vite \+ TypeScript setup
+            • React UI with Shadcn/UI components
+            • Tailwind CSS styling
+            • Hot reload development
             
             ✅ Extension \.crx file is ready for installation\!
           document: extension.crx

@@ -1,36 +1,37 @@
 {
-  "name": "family-privacy-extension",
-  "version": "1.0.0",
-  "description": "A browser extension to help families control and monitor web browsing activities with customizable profiles and content filtering",
-  "main": "background.js",
+  "name": "privacy-family-extension",
+  "version": "2.0.0",
+  "description": "A modern browser extension to help families control and monitor web browsing activities",
+  "type": "module",
   "scripts": {
-    "build": "echo 'Building extension...' && npm run validate",
-    "validate": "echo 'Validating manifest...' && node -e \"console.log('Manifest valid:', JSON.parse(require('fs').readFileSync('manifest.json', 'utf8')))\"",
-    "build:prepare": "rm -rf build && mkdir build && cp manifest.json background.js blocked.html content.js options.html popup.html build/ && cp -r icons styles scripts build/",
-    "pack": "echo 'Packing extension...' && npx bestzip extension.zip manifest.json background.js blocked.html content.js options.html popup.html icons styles scripts",
-    "dev": "echo 'Development mode - Load unpacked extension in Chrome'",
-    "crx": "npm run build:prepare && npx crx3 -p key.pem -o extension.crx build && rm -rf build"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit",
+    "crx": "npm run build && crx3 --private-key key.pem --extension dist --output extension.crx",
+    "pack": "npm run build && cd dist && zip -r ../extension.zip . && cd ..",
+    "clean": "rm -rf dist extension.crx extension.zip"
   },
-  "keywords": [
-    "browser-extension",
-    "parental-controls",
-    "content-filtering",
-    "family-safety",
-    "privacy",
-    "web-monitoring"
-  ],
-  "author": "Family Privacy Extension Team",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/your-username/family-privacy-extension.git"
+  "dependencies": {
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.0.0",
+    "lucide-react": "^0.294.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tailwind-merge": "^2.2.0"
   },
   "devDependencies": {
-    "bestzip": "^2.2.1",
+    "@crxjs/vite-plugin": "^2.0.0-beta.21",
+    "@types/chrome": "^0.0.251",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
     "crx3": "^1.1.3",
-    "web-ext": "^7.0.0"
-  },
-  "engines": {
-    "node": ">=14.0.0"
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.8"
   }
 }
