@@ -1,6 +1,17 @@
+export interface User {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  imageUrl?: string;
+  createdAt: number;
+  lastSignedInAt?: number;
+}
+
 export interface Profile {
   id: string;
   name: string;
+  userId: string; // Associated with Clerk user
   isDefault: boolean;
   restrictions: {
     adult: boolean;
@@ -25,6 +36,8 @@ export interface Profile {
     allowedHours: { start: string; end: string };
     allowedDays: number[];
   };
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface ExtensionSettings {

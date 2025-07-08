@@ -42,6 +42,7 @@ class FamilyPrivacyExtension {
       const defaultProfile: Profile = {
         id: this.generateUniqueId(),
         name: 'Default Profile',
+        userId: 'default-user', // Default userId for anonymous users
         isDefault: true,
         restrictions: {
           adult: true,      // Block adult content
@@ -65,7 +66,9 @@ class FamilyPrivacyExtension {
           enabled: false,
           allowedHours: { start: '09:00', end: '21:00' },
           allowedDays: [1, 2, 3, 4, 5, 6, 7] // 1=Monday, 7=Sunday
-        }
+        },
+        createdAt: Date.now(),
+        updatedAt: Date.now()
       };
 
       const settings: ExtensionSettings = {

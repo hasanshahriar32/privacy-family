@@ -5,14 +5,37 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Profile } from '@/types';
 import '../globals.css'
+import { ExtensionClerkProvider } from '../lib/clerk-provider'
+import { 
+  SignedIn, 
+  SignedOut, 
+  SignInButton, 
+  SignUpButton, 
+  UserButton, 
+  useUser 
+} from '@clerk/clerk-react';
 
 const Options: React.FC = () => {
+  const { user } = useUser();
   const [activeTab, setActiveTab] = useState('profiles');
   const [profiles, setProfiles] = useState<Profile[]>([]);
 
   useEffect(() => {
     loadProfiles();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      console.log('Options Page - Clerk User Data:', {
+        id: user.id,
+        email: user.primaryEmailAddress?.emailAddress,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        fullName: user.fullName,
+        imageUrl: user.imageUrl
+      });
+    }
+  }, [user]);
 
   const loadProfiles = async () => {
     try {
@@ -58,74 +81,162 @@ const Options: React.FC = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center gap-3">
             <Shield className="h-8 w-8 text-primary" />
-            <div>
+            <div className="flex-1">
               <h1 className="text-2xl font-bold">Family Privacy Extension</h1>
               <p className="text-sm text-muted-foreground">
                 Configure profiles and content filtering settings
               </p>
             </div>
+            <SignedIn>
+              <div className="flex items-center gap-4">
+                {user && (
+                  <div className="text-right">
+                    <p className="text-sm font-medium">
+                      {user.fullName || user.firstName || 'User'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {user.primaryEmailAddress?.emailAddress}
+                    </p>
+                  </div>
+                )}
+                <UserButton afterSignOutUrl="/" />
+              </div>
+            </SignedIn>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-6 py-6">
-        <div className="flex gap-6">
-          {/* Sidebar Navigation */}
-          <nav className="w-64 space-y-2">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <Button
-                  key={tab.id}
-                  variant={activeTab === tab.id ? 'default' : 'ghost'}
-                  className="w-full justify-start"
-                  onClick={() => setActiveTab(tab.id)}
-                >
-                  <Icon className="mr-2 h-4 w-4" />
-                  {tab.label}
-                </Button>
-              );
-            })}
-          </nav>
-
-          {/* Main Content */}
-          <main className="flex-1">
-            {renderTabContent()}
-          </main>
+      <SignedOut>
+        <div className="container mx-auto px-6 py-12">
+          <Card className="max-w-md mx-auto">
+            <CardHeader className="text-center">
+              <CardTitle>Authentication Required</CardTitle>
+              <CardDescription>
+                Please sign in to access the family privacy settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-2">
+                <SignInButton mode="modal">
+                  <Button variant="default" className="w-full">
+                    Sign In
+                  </Button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <Button variant="outline" className="w-full">
+                    Sign Up
+                  </Button>
+                </SignUpButton>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+      </SignedOut>
+
+      <SignedIn>
+        <div className="container mx-auto px-6 py-6">
+          <div className="flex gap-6">
+            {/* Sidebar Navigation */}
+            <nav className="w-64 space-y-2">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <Button
+                    key={tab.id}
+                    variant={activeTab === tab.id ? 'default' : 'ghost'}
+                    className="w-full justify-start"
+                    onClick={() => setActiveTab(tab.id)}
+                  >
+                    <Icon className="mr-2 h-4 w-4" />
+                    {tab.label}
+                  </Button>
+                );
+              })}
+            </nav>
+
+            {/* Main Content */}
+            <main className="flex-1">
+              {renderTabContent()}
+            </main>
+          </div>
+        </div>
+      </SignedIn>
     </div>
   );
 };
 
 // Placeholder components for each tab
-const ProfilesTab: React.FC<{ profiles: Profile[]; onProfilesChange: (profiles: Profile[]) => void }> = ({ profiles }) => (
-  <Card>
-    <CardHeader>
-      <CardTitle>Manage Profiles</CardTitle>
-      <CardDescription>
-        Create different profiles for family members with customized restrictions.
-      </CardDescription>
-    </CardHeader>
-    <CardContent>
-      <div className="space-y-4">
-        {profiles.length === 0 ? (
-          <p className="text-muted-foreground">No profiles found. Create your first profile.</p>
-        ) : (
-          profiles.map((profile) => (
-            <div key={profile.id} className="p-4 border rounded-lg">
-              <h3 className="font-semibold">{profile.name}</h3>
-              <p className="text-sm text-muted-foreground">
-                {profile.isDefault ? 'Default Profile' : 'Custom Profile'}
-              </p>
+const ProfilesTab: React.FC<{ profiles: Profile[]; onProfilesChange: (profiles: Profile[]) => void }> = ({ profiles }) => {
+  const { user } = useUser();
+  
+  return (
+    <div className="space-y-6">
+      {/* User Info Card */}
+      {user && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Account Information</CardTitle>
+            <CardDescription>
+              Your Clerk authentication details and account settings.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              {user.imageUrl && (
+                <img 
+                  src={user.imageUrl} 
+                  alt="Profile" 
+                  className="w-16 h-16 rounded-full"
+                />
+              )}
+              <div className="space-y-1">
+                <p className="text-lg font-semibold">
+                  {user.fullName || `${user.firstName} ${user.lastName}`.trim() || 'User'}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {user.primaryEmailAddress?.emailAddress}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  User ID: {user.id}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Member since: {user.createdAt?.toLocaleDateString()}
+                </p>
+              </div>
             </div>
-          ))
-        )}
-        <Button>Add New Profile</Button>
-      </div>
-    </CardContent>
-  </Card>
-);
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Profiles Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Family Profiles</CardTitle>
+          <CardDescription>
+            Create different profiles for family members with customized restrictions.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {profiles.length === 0 ? (
+              <p className="text-muted-foreground">No profiles found. Create your first profile.</p>
+            ) : (
+              profiles.map((profile) => (
+                <div key={profile.id} className="p-4 border rounded-lg">
+                  <h3 className="font-semibold">{profile.name}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {profile.isDefault ? 'Default Profile' : 'Custom Profile'}
+                  </p>
+                </div>
+              ))
+            )}
+            <Button>Add New Profile</Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 
 const CategoriesTab: React.FC<{ profiles: Profile[] }> = () => (
   <Card>
@@ -200,4 +311,8 @@ const SettingsTab: React.FC = () => (
 const container = document.getElementById('app')!
 const root = createRoot(container)
 
-root.render(<Options />)
+root.render(
+  <ExtensionClerkProvider>
+    <Options />
+  </ExtensionClerkProvider>
+)
