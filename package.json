@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "crx": "npm run build && crx3 --private-key key.pem --extension dist --output extension.crx",
-    "pack": "npm run build && cd dist && zip -r ../extension.zip . && cd ..",
+    "pack": "npm run build && npm run zip:dist",
+    "zip:dist": "node -e \"const fs=require('fs');const path=require('path');const archiver=require('archiver');const output=fs.createWriteStream('extension.zip');const archive=archiver('zip');output.on('close',()=>console.log('ZIP created:',archive.pointer(),'bytes'));archive.pipe(output);archive.directory('dist/',false);archive.finalize();\"",
     "clean": "rm -rf dist extension.crx extension.zip"
   },
   "dependencies": {
