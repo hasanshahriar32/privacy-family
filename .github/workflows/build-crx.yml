@@ -37,13 +37,13 @@ jobs:
       - name: Install crx3 for packaging
         run: npm install -g crx3
 
-      - name: Create CRX file
+      - name: Build .crx file using crx3
         run: |
-          crx3 --private-key key.pem --extension dist --output extension.crx
+          npm run crx
 
-      - name: Create ZIP distribution
+      - name: Zip extension source for distribution
         run: |
-          cd dist && zip -r ../extension.zip . && cd ..
+          npm run pack
 
       - name: Upload .crx artifact
         uses: actions/upload-artifact@v4
