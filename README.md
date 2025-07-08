@@ -84,3 +84,35 @@ The extension uses Shadcn/UI components which provide:
 - Dark/light mode support
 - Responsive design
 - Modern styling with Tailwind CSS
+
+## Authentication
+
+This extension uses **Chrome Identity API with Google OAuth** for user authentication. This approach was chosen because:
+
+- ✅ Works within Chrome's strict Content Security Policy
+- ✅ No external scripts that violate CSP
+- ✅ Built-in Chrome extension support
+- ✅ Secure token management
+
+### Setup Authentication
+
+1. **Google Cloud Console:**
+   - Create a project at [Google Cloud Console](https://console.developers.google.com/)
+   - Enable Google+ API
+   - Create OAuth 2.0 credentials for Chrome extension
+   - Add your extension ID to authorized origins
+
+2. **Configure the extension:**
+   ```bash
+   # Update .env.local
+   GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+   
+   # Update src/manifest.json oauth2 section
+   ```
+
+3. **Get Extension ID:**
+   - Build and load the extension
+   - Copy the ID from chrome://extensions/
+   - Add to Google OAuth settings
+
+For detailed setup instructions, see [CHROME_EXTENSION_AUTH_SOLUTION.md](./CHROME_EXTENSION_AUTH_SOLUTION.md)

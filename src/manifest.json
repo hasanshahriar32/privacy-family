@@ -12,11 +12,7 @@
   ],
   "host_permissions": [
     "http://*/*",
-    "https://*/*",
-    "https://*.clerk.accounts.dev/*",
-    "https://*.clerk.com/*",
-    "https://clerk.accounts.dev/*",
-    "https://api.clerk.dev/*"
+    "https://*/*"
   ],
   "background": {
     "service_worker": "src/background/index.ts",
@@ -46,8 +42,10 @@
     "128": "public/icons/icon128.png"
   },
   "options_page": "src/options/index.html",
-  "content_security_policy": {
-    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu+mIhnBwyeOjje871q6g0Shaz5eocSwCft24KAPp1GG4RZFR9nNGj5hAGCdGTF371jIW4P9aLTDr1HPPPBaOYW1jdin0vMHmocwGgvLeXxhug+kTy0rNJCv0W8Nysj76JfRX94h1LH7D6bz310kXyJcxZtz9fex5teRTOB/RVRlr2uUADBw8lAalf/5TK3xv2KSIU7b8iCzKAq5z/0dcJVjiGoXDY/HnrVCnCHSmPclHJ1Pdn/JStGpnRNmKsuXo9j+9W2ikJx1wwDgrhJUhCc7tYfOYMLvGIofhLSeMuqDvmmTVNjIMsUy9SQ6Mewg2oxk8kLpC2fpp/7WBQjW6KwIDAQAB",
+  "oauth2": {
+    "client_id": "576791071512-64vb3c2ljkbfhgf2di619250tikptgin.apps.googleusercontent.com",
+    "scopes": ["openid", "email", "profile"]
   },
   "web_accessible_resources": [
     {

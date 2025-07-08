@@ -1,21 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Settings, Activity, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { Shield, Settings, Activity, AlertTriangle, CheckCircle, Clock, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Profile, SiteStatus, Statistics } from '@/types';
-import { 
-  SignedIn, 
-  SignedOut, 
-  SignInButton, 
-  SignUpButton, 
-  UserButton, 
-  useUser 
-} from '@clerk/clerk-react';
+import { useAuth } from '../lib/auth-service';
 
 interface PopupProps {}
 
 const Popup: React.FC<PopupProps> = () => {
-  const { user } = useUser();
+  const { isAuthenticated, user, signIn, signOut, isEdge } = useAuth();
   const [currentDomain, setCurrentDomain] = useState<string>('Loading...');
   const [siteStatus, setSiteStatus] = useState<SiteStatus>({ status: 'checking' });
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -25,6 +18,7 @@ const Popup: React.FC<PopupProps> = () => {
     sitesBlocked: 0,
     timeActive: 0
   });
+  const [authError, setAuthError] = useState<string>('');
 
   useEffect(() => {
     initializePopup();
@@ -32,20 +26,28 @@ const Popup: React.FC<PopupProps> = () => {
 
   useEffect(() => {
     if (user) {
-      console.log('Clerk User Data:', {
+      console.log('Chrome Identity User Data:', {
         id: user.id,
-        email: user.primaryEmailAddress?.emailAddress,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        fullName: user.fullName,
-        imageUrl: user.imageUrl,
-        createdAt: user.createdAt,
-        lastSignInAt: user.lastSignInAt,
-        publicMetadata: user.publicMetadata,
-        unsafeMetadata: user.unsafeMetadata
+        email: user.email,
+        name: user.name,
+        picture: user.picture,
+        given_name: user.given_name,
+        family_name: user.family_name,
+        verified_email: user.verified_email
       });
     }
   }, [user]);
+
+  const handleSignIn = async () => {
+    try {
+      setAuthError('');
+      await signIn();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+      setAuthError(errorMessage);
+      console.error('Sign-in error:', error);
+    }
+  };
 
   const initializePopup = async () => {
     await getCurrentTab();
@@ -161,68 +163,101 @@ const Popup: React.FC<PopupProps> = () => {
           <h1 className="text-lg font-semibold">Family Privacy</h1>
           <p className="text-sm text-muted-foreground">Extension v2.0</p>
         </div>
-        <SignedIn>
-          <UserButton afterSignOutUrl="/" />
-        </SignedIn>
+        {isAuthenticated && user && (
+          <div className="flex items-center gap-2">
+            <img 
+              src={user.picture} 
+              alt="Profile" 
+              className="w-6 h-6 rounded-full"
+            />
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              onClick={() => signOut()}
+              className="text-xs"
+            >
+              Sign Out
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Authentication Section */}
-      <SignedOut>
+      {!isAuthenticated ? (
         <Card className="mb-4">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Welcome</CardTitle>
-            <CardDescription>Sign in to access your family privacy settings</CardDescription>
+            <CardDescription>
+              {isEdge 
+                ? "Authentication is not supported on Microsoft Edge. Please use Google Chrome to sign in."
+                : "Sign in with Google to access your family privacy settings"
+              }
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="grid grid-cols-2 gap-2">
-              <SignInButton mode="modal">
-                <Button size="sm" variant="default" className="w-full">
-                  Sign In
+            {!isEdge ? (
+              <>
+                <Button 
+                  onClick={handleSignIn}
+                  className="w-full"
+                  size="sm"
+                >
+                  <User className="h-4 w-4 mr-2" />
+                  Sign In with Google
                 </Button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <Button size="sm" variant="outline" className="w-full">
-                  Sign Up
-                </Button>
-              </SignUpButton>
-            </div>
+                {authError && (
+                  <div className="text-center p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-xs text-red-800">{authError}</p>
+                    <p className="text-xs text-red-600 mt-1">
+                      Check the setup guide: OAUTH_SETUP_FIX.md
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  Please switch to Google Chrome to use authentication features.
+                </p>
+                <p className="text-xs text-yellow-600 mt-1">
+                  The extension will work in guest mode with limited features.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
-      </SignedOut>
-
-      <SignedIn>
-        {/* User Profile Section */}
-        {user && (
-          <Card className="mb-4">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">User Profile</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex items-center gap-2">
-                {user.imageUrl && (
+      ) : (
+        <>
+          {/* User Profile Section */}
+          {user && (
+            <Card className="mb-4">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">User Profile</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex items-center gap-2">
                   <img 
-                    src={user.imageUrl} 
+                    src={user.picture} 
                     alt="Profile" 
                     className="w-8 h-8 rounded-full"
                   />
-                )}
-                <div className="flex-1">
-                  <p className="text-sm font-medium">
-                    {user.fullName || user.firstName || 'User'}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.primaryEmailAddress?.emailAddress}
-                  </p>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">
+                      {user.name || 'User'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {user.email}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              {currentProfileData && (
-                <p className="text-xs text-muted-foreground">
-                  Active Profile: {currentProfileData.name}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        )}
+                {currentProfileData && (
+                  <p className="text-xs text-muted-foreground">
+                    Active Profile: {currentProfileData.name}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
         {/* Current Site Status */}
         <Card className="mb-4">
@@ -308,7 +343,8 @@ const Popup: React.FC<PopupProps> = () => {
             </div>
           </CardContent>
         </Card>
-      </SignedIn>
+        </>
+      )}
     </div>
   );
 };

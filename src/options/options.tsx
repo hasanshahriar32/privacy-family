@@ -5,20 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Profile } from '@/types';
 import '../globals.css'
-import { ExtensionClerkProvider } from '../lib/clerk-provider'
-import { 
-  SignedIn, 
-  SignedOut, 
-  SignInButton, 
-  SignUpButton, 
-  UserButton, 
-  useUser 
-} from '@clerk/clerk-react';
+import { useAuth } from '../lib/auth-service';
 
 const Options: React.FC = () => {
-  const { user } = useUser();
+  const { isAuthenticated, user, signIn, signOut, isEdge } = useAuth();
   const [activeTab, setActiveTab] = useState('profiles');
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [authError, setAuthError] = useState<string>('');
 
   useEffect(() => {
     loadProfiles();
@@ -26,16 +19,28 @@ const Options: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      console.log('Options Page - Clerk User Data:', {
+      console.log('Options Page - Chrome Identity User Data:', {
         id: user.id,
-        email: user.primaryEmailAddress?.emailAddress,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        fullName: user.fullName,
-        imageUrl: user.imageUrl
+        email: user.email,
+        name: user.name,
+        picture: user.picture,
+        given_name: user.given_name,
+        family_name: user.family_name,
+        verified_email: user.verified_email
       });
     }
   }, [user]);
+
+  const handleSignIn = async () => {
+    try {
+      setAuthError('');
+      await signIn();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+      setAuthError(errorMessage);
+      console.error('Sign-in error:', error);
+    }
+  };
 
   const loadProfiles = async () => {
     try {
@@ -87,53 +92,73 @@ const Options: React.FC = () => {
                 Configure profiles and content filtering settings
               </p>
             </div>
-            <SignedIn>
+            {isAuthenticated && user && (
               <div className="flex items-center gap-4">
-                {user && (
-                  <div className="text-right">
-                    <p className="text-sm font-medium">
-                      {user.fullName || user.firstName || 'User'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {user.primaryEmailAddress?.emailAddress}
-                    </p>
-                  </div>
-                )}
-                <UserButton afterSignOutUrl="/" />
+                <div className="text-right">
+                  <p className="text-sm font-medium">
+                    {user.name || 'User'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.email}
+                  </p>
+                </div>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => signOut()}
+                >
+                  Sign Out
+                </Button>
               </div>
-            </SignedIn>
+            )}
           </div>
         </div>
       </header>
 
-      <SignedOut>
+      {!isAuthenticated ? (
         <div className="container mx-auto px-6 py-12">
           <Card className="max-w-md mx-auto">
             <CardHeader className="text-center">
               <CardTitle>Authentication Required</CardTitle>
               <CardDescription>
-                Please sign in to access the family privacy settings
+                {isEdge 
+                  ? "Authentication is not supported on Microsoft Edge. Please use Google Chrome."
+                  : "Please sign in with Google to access the family privacy settings"
+                }
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-2">
-                <SignInButton mode="modal">
-                  <Button variant="default" className="w-full">
-                    Sign In
+              {!isEdge ? (
+                <>
+                  <Button 
+                    onClick={handleSignIn}
+                    className="w-full"
+                  >
+                    Sign In with Google
                   </Button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <Button variant="outline" className="w-full">
-                    Sign Up
-                  </Button>
-                </SignUpButton>
-              </div>
+                  {authError && (
+                    <div className="text-center p-4 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-sm text-red-800 mb-2">{authError}</p>
+                      <p className="text-xs text-red-600">
+                        Check the OAuth setup guide: OAUTH_SETUP_FIX.md
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800 mb-2">
+                    Microsoft Edge does not support Chrome Identity API
+                  </p>
+                  <p className="text-xs text-yellow-600">
+                    Please use Google Chrome for full authentication features.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
-      </SignedOut>
-
-      <SignedIn>
+      ) : (
         <div className="container mx-auto px-6 py-6">
           <div className="flex gap-6">
             {/* Sidebar Navigation */}
@@ -160,14 +185,14 @@ const Options: React.FC = () => {
             </main>
           </div>
         </div>
-      </SignedIn>
+        )}
     </div>
   );
 };
 
 // Placeholder components for each tab
 const ProfilesTab: React.FC<{ profiles: Profile[]; onProfilesChange: (profiles: Profile[]) => void }> = ({ profiles }) => {
-  const { user } = useUser();
+  const { user } = useAuth();
   
   return (
     <div className="space-y-6">
@@ -182,25 +207,23 @@ const ProfilesTab: React.FC<{ profiles: Profile[]; onProfilesChange: (profiles: 
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
-              {user.imageUrl && (
-                <img 
-                  src={user.imageUrl} 
-                  alt="Profile" 
-                  className="w-16 h-16 rounded-full"
-                />
-              )}
+              <img 
+                src={user.picture} 
+                alt="Profile" 
+                className="w-16 h-16 rounded-full"
+              />
               <div className="space-y-1">
                 <p className="text-lg font-semibold">
-                  {user.fullName || `${user.firstName} ${user.lastName}`.trim() || 'User'}
+                  {user.name || 'User'}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {user.primaryEmailAddress?.emailAddress}
+                  {user.email}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   User ID: {user.id}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Member since: {user.createdAt?.toLocaleDateString()}
+                  Verified: {user.verified_email ? 'Yes' : 'No'}
                 </p>
               </div>
             </div>
@@ -311,8 +334,4 @@ const SettingsTab: React.FC = () => (
 const container = document.getElementById('app')!
 const root = createRoot(container)
 
-root.render(
-  <ExtensionClerkProvider>
-    <Options />
-  </ExtensionClerkProvider>
-)
+root.render(<Options />)
