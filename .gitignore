@@ -49,3 +49,6 @@ coverage/
 
 # ESLint cache
 .eslintcache
+
+extension.zip
+extension.crx
