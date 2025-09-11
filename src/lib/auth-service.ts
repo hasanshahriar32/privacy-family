@@ -1,21 +1,32 @@
-// Simple Manual Authentication Service
+import { apiClient, LoginRequest } from './api-client';
+
+// User interface to match backend response
 export interface User {
   id: string;
   email: string;
-  name: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  // Additional computed properties for UI
+  name?: string;
   avatar?: string;
 }
 
 export interface AuthState {
   isAuthenticated: boolean;
   user: User | null;
+  loading: boolean;
 }
 
-class SimpleAuthService {
+class AuthService {
   private listeners: ((state: AuthState) => void)[] = [];
   private currentState: AuthState = {
     isAuthenticated: false,
-    user: null
+    user: null,
+    loading: true
   };
 
   constructor() {
@@ -23,18 +34,47 @@ class SimpleAuthService {
   }
 
   private async initializeAuth() {
-    // Check if user is already stored
-    const user = await this.getStoredUser();
-    if (user) {
-      this.updateState({
-        isAuthenticated: true,
-        user
-      });
+    try {
+      const isAuthenticated = await apiClient.isAuthenticated();
+      if (isAuthenticated) {
+        const user = await apiClient.getStoredUser();
+        if (user) {
+          const enhancedUser = this.enhanceUser(user);
+          this.updateState({
+            isAuthenticated: true,
+            user: enhancedUser,
+            loading: false
+          });
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error initializing auth:', error);
     }
+    
+    this.updateState({
+      isAuthenticated: false,
+      user: null,
+      loading: false
+    });
+  }
+
+  private enhanceUser(user: User): User {
+    return {
+      ...user,
+      name: user.firstName && user.lastName 
+        ? `${user.firstName} ${user.lastName}` 
+        : user.username || user.email.split('@')[0],
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        user.firstName && user.lastName 
+          ? `${user.firstName} ${user.lastName}` 
+          : user.username || user.email
+      )}&background=0D8ABC&color=fff`
+    };
   }
 
   async signIn(email: string, password: string): Promise<User> {
-    // Simple validation
+    // Input validation
     if (!email || !password) {
       throw new Error('Email and password are required');
     }
@@ -47,56 +87,55 @@ class SimpleAuthService {
       throw new Error('Password must be at least 6 characters');
     }
 
-    // Create user object
-    const user: User = {
-      id: this.generateUserId(email),
-      email: email,
-      name: email.split('@')[0], // Use email prefix as name
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(email)}&background=0D8ABC&color=fff`
-    };
-
-    // Store user
-    await this.storeUser(user);
-    
     this.updateState({
-      isAuthenticated: true,
-      user
+      ...this.currentState,
+      loading: true
     });
 
-    return user;
+    try {
+      const credentials: LoginRequest = { email, password };
+      const response = await apiClient.login(credentials);
+
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Login failed');
+      }
+
+      const enhancedUser = this.enhanceUser(response.data.user);
+      
+      this.updateState({
+        isAuthenticated: true,
+        user: enhancedUser,
+        loading: false
+      });
+
+      return enhancedUser;
+    } catch (error) {
+      this.updateState({
+        isAuthenticated: false,
+        user: null,
+        loading: false
+      });
+      throw error;
+    }
   }
 
   async signOut(): Promise<void> {
-    await this.clearStoredUser();
     this.updateState({
-      isAuthenticated: false,
-      user: null
+      ...this.currentState,
+      loading: true
     });
-  }
 
-  private generateUserId(email: string): string {
-    // Simple ID generation based on email
-    return btoa(email).replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
-  }
-
-  private async storeUser(user: User): Promise<void> {
-    return new Promise((resolve) => {
-      chrome.storage.local.set({ currentUser: user }, resolve);
-    });
-  }
-
-  private async getStoredUser(): Promise<User | null> {
-    return new Promise((resolve) => {
-      chrome.storage.local.get(['currentUser'], (result) => {
-        resolve(result.currentUser || null);
+    try {
+      await apiClient.logout();
+    } catch (error) {
+      console.error('Error during logout:', error);
+    } finally {
+      this.updateState({
+        isAuthenticated: false,
+        user: null,
+        loading: false
       });
-    });
-  }
-
-  private async clearStoredUser(): Promise<void> {
-    return new Promise((resolve) => {
-      chrome.storage.local.remove(['currentUser'], resolve);
-    });
+    }
   }
 
   private updateState(newState: AuthState) {
@@ -118,10 +157,42 @@ class SimpleAuthService {
       }
     };
   }
+
+  // Additional method to refresh user data
+  async refreshUser(): Promise<void> {
+    try {
+      const isAuthenticated = await apiClient.isAuthenticated();
+      if (isAuthenticated) {
+        const user = await apiClient.getStoredUser();
+        if (user) {
+          const enhancedUser = this.enhanceUser(user);
+          this.updateState({
+            isAuthenticated: true,
+            user: enhancedUser,
+            loading: false
+          });
+          return;
+        }
+      }
+      
+      this.updateState({
+        isAuthenticated: false,
+        user: null,
+        loading: false
+      });
+    } catch (error) {
+      console.error('Error refreshing user:', error);
+      this.updateState({
+        isAuthenticated: false,
+        user: null,
+        loading: false
+      });
+    }
+  }
 }
 
 // Create singleton instance
-export const authService = new SimpleAuthService();
+export const authService = new AuthService();
 
 // React hook for authentication
 import { useState, useEffect } from 'react';
@@ -137,6 +208,7 @@ export function useAuth() {
   return {
     ...authState,
     signIn: (email: string, password: string) => authService.signIn(email, password),
-    signOut: () => authService.signOut()
+    signOut: () => authService.signOut(),
+    refreshUser: () => authService.refreshUser()
   };
 }

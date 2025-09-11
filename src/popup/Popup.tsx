@@ -8,7 +8,7 @@ import { useAuth } from '../lib/auth-service';
 interface PopupProps {}
 
 const Popup: React.FC<PopupProps> = () => {
-  const { isAuthenticated, user, signIn, signOut } = useAuth();
+  const { isAuthenticated, user, loading, signIn, signOut } = useAuth();
   const [currentDomain, setCurrentDomain] = useState<string>('Loading...');
   const [siteStatus, setSiteStatus] = useState<SiteStatus>({ status: 'checking' });
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -21,6 +21,7 @@ const Popup: React.FC<PopupProps> = () => {
   const [authError, setAuthError] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
+  const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
 
   useEffect(() => {
     initializePopup();
@@ -38,8 +39,12 @@ const Popup: React.FC<PopupProps> = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isLoggingIn) return; // Prevent multiple submissions
+    
     try {
       setAuthError('');
+      setIsLoggingIn(true);
       await signIn(email, password);
       setEmail('');
       setPassword('');
@@ -47,6 +52,8 @@ const Popup: React.FC<PopupProps> = () => {
       const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
       setAuthError(errorMessage);
       console.error('Sign-in error:', error);
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -200,8 +207,9 @@ const Popup: React.FC<PopupProps> = () => {
                   placeholder="Email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   required
+                  disabled={isLoggingIn || loading}
                 />
               </div>
               <div>
@@ -210,23 +218,30 @@ const Popup: React.FC<PopupProps> = () => {
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   required
                   minLength={6}
+                  disabled={isLoggingIn || loading}
                 />
               </div>
               <Button 
                 type="submit"
                 className="w-full"
                 size="sm"
+                disabled={isLoggingIn || loading || !email || !password}
               >
                 <User className="h-4 w-4 mr-2" />
-                Sign In
+                {isLoggingIn ? 'Signing In...' : 'Sign In'}
               </Button>
             </form>
             {authError && (
               <div className="text-center p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-xs text-red-800">{authError}</p>
+              </div>
+            )}
+            {loading && !authError && (
+              <div className="text-center p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs text-blue-800">Checking authentication...</p>
               </div>
             )}
           </CardContent>
@@ -237,7 +252,17 @@ const Popup: React.FC<PopupProps> = () => {
           {user && (
             <Card className="mb-4">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">User Profile</CardTitle>
+                <CardTitle className="text-base flex items-center justify-between">
+                  User Profile
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={signOut}
+                    className="text-xs"
+                  >
+                    Sign Out
+                  </Button>
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex items-center gap-2">
@@ -248,11 +273,16 @@ const Popup: React.FC<PopupProps> = () => {
                   />
                   <div className="flex-1">
                     <p className="text-sm font-medium">
-                      {user.name || 'User'}
+                      {user.name || user.username || 'User'}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {user.email}
                     </p>
+                    {user.username && user.username !== user.email.split('@')[0] && (
+                      <p className="text-xs text-muted-foreground">
+                        @{user.username}
+                      </p>
+                    )}
                   </div>
                 </div>
                 {currentProfileData && (
@@ -260,6 +290,9 @@ const Popup: React.FC<PopupProps> = () => {
                     Active Profile: {currentProfileData.name}
                   </p>
                 )}
+                <div className="text-xs text-muted-foreground">
+                  Status: {user.isActive ? 'Active' : 'Inactive'}
+                </div>
               </CardContent>
             </Card>
           )}
