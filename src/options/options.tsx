@@ -8,10 +8,12 @@ import '../globals.css'
 import { useAuth } from '../lib/auth-service';
 
 const Options: React.FC = () => {
-  const { isAuthenticated, user, signIn, signOut, isEdge } = useAuth();
+  const { isAuthenticated, user, signIn, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState('profiles');
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [authError, setAuthError] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
 
   useEffect(() => {
     loadProfiles();
@@ -19,22 +21,21 @@ const Options: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      console.log('Options Page - Chrome Identity User Data:', {
+      console.log('Options Page - User Data:', {
         id: user.id,
         email: user.email,
-        name: user.name,
-        picture: user.picture,
-        given_name: user.given_name,
-        family_name: user.family_name,
-        verified_email: user.verified_email
+        name: user.name
       });
     }
   }, [user]);
 
-  const handleSignIn = async () => {
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
       setAuthError('');
-      await signIn();
+      await signIn(email, password);
+      setEmail('');
+      setPassword('');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
       setAuthError(errorMessage);
@@ -119,40 +120,44 @@ const Options: React.FC = () => {
         <div className="container mx-auto px-6 py-12">
           <Card className="max-w-md mx-auto">
             <CardHeader className="text-center">
-              <CardTitle>Authentication Required</CardTitle>
+              <CardTitle>Sign In Required</CardTitle>
               <CardDescription>
-                {isEdge 
-                  ? "Authentication is not supported on Microsoft Edge. Please use Google Chrome."
-                  : "Please sign in with Google to access the family privacy settings"
-                }
+                Please sign in to access the family privacy settings
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {!isEdge ? (
-                <>
-                  <Button 
-                    onClick={handleSignIn}
-                    className="w-full"
-                  >
-                    Sign In with Google
-                  </Button>
-                  {authError && (
-                    <div className="text-center p-4 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-sm text-red-800 mb-2">{authError}</p>
-                      <p className="text-xs text-red-600">
-                        Check the OAuth setup guide: OAUTH_SETUP_FIX.md
-                      </p>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="text-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800 mb-2">
-                    Microsoft Edge does not support Chrome Identity API
-                  </p>
-                  <p className="text-xs text-yellow-600">
-                    Please use Google Chrome for full authentication features.
-                  </p>
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div>
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                    minLength={6}
+                  />
+                </div>
+                <Button 
+                  type="submit"
+                  className="w-full"
+                >
+                  Sign In
+                </Button>
+              </form>
+              {authError && (
+                <div className="text-center p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-800">{authError}</p>
                 </div>
               )}
             </CardContent>
@@ -208,7 +213,7 @@ const ProfilesTab: React.FC<{ profiles: Profile[]; onProfilesChange: (profiles: 
           <CardContent>
             <div className="flex items-center gap-4">
               <img 
-                src={user.picture} 
+                src={user.avatar} 
                 alt="Profile" 
                 className="w-16 h-16 rounded-full"
               />
@@ -221,9 +226,6 @@ const ProfilesTab: React.FC<{ profiles: Profile[]; onProfilesChange: (profiles: 
                 </p>
                 <p className="text-xs text-muted-foreground">
                   User ID: {user.id}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Verified: {user.verified_email ? 'Yes' : 'No'}
                 </p>
               </div>
             </div>

@@ -1,185 +1,101 @@
-// Chrome Identity API Authentication Service
+// Simple Manual Authentication Service
 export interface User {
   id: string;
   email: string;
   name: string;
-  picture: string;
-  given_name?: string;
-  family_name?: string;
-  verified_email?: boolean;
+  avatar?: string;
 }
 
 export interface AuthState {
   isAuthenticated: boolean;
   user: User | null;
-  token: string | null;
-  isEdge: boolean;
 }
 
-class ChromeAuthService {
+class SimpleAuthService {
   private listeners: ((state: AuthState) => void)[] = [];
   private currentState: AuthState = {
     isAuthenticated: false,
-    user: null,
-    token: null,
-    isEdge: this.isEdgeBrowser()
+    user: null
   };
 
   constructor() {
     this.initializeAuth();
   }
 
-  private isEdgeBrowser(): boolean {
-    // Detect if we're running on Microsoft Edge
-    return navigator.userAgent.includes('Edg/') || 
-           !chrome.identity || 
-           typeof chrome.identity.getAuthToken !== 'function';
-  }
-
   private async initializeAuth() {
-    // Check if user is already authenticated
-    const token = await this.getStoredToken();
-    if (token && !this.currentState.isEdge) {
-      try {
-        const user = await this.getUserInfo(token);
-        this.updateState({
-          isAuthenticated: true,
-          user,
-          token,
-          isEdge: this.currentState.isEdge
-        });
-      } catch (error) {
-        console.error('Failed to validate stored token:', error);
-        await this.clearStoredToken();
-      }
+    // Check if user is already stored
+    const user = await this.getStoredUser();
+    if (user) {
+      this.updateState({
+        isAuthenticated: true,
+        user
+      });
     }
   }
 
-  async signIn(): Promise<User> {
-    return new Promise((resolve, reject) => {
-      // Check if we're on Edge and Identity API is not available
-      if (this.currentState.isEdge) {
-        reject(new Error('Chrome Identity API not supported on Microsoft Edge. Please use Chrome browser for authentication.'));
-        return;
-      }
+  async signIn(email: string, password: string): Promise<User> {
+    // Simple validation
+    if (!email || !password) {
+      throw new Error('Email and password are required');
+    }
 
-      if (!chrome.identity || typeof chrome.identity.getAuthToken !== 'function') {
-        reject(new Error('Chrome Identity API not available'));
-        return;
-      }
+    if (!email.includes('@')) {
+      throw new Error('Please enter a valid email address');
+    }
 
-      chrome.identity.getAuthToken({ interactive: true }, async (token) => {
-        if (chrome.runtime.lastError) {
-          const errorMessage = chrome.runtime.lastError.message;
-          
-          // Provide specific error messages for common OAuth issues
-          if (errorMessage?.includes('OAuth2 request failed')) {
-            reject(new Error('OAuth configuration error. Please check that your Google Client ID is correctly set up in the Google Cloud Console and that the extension ID is added to authorized origins.'));
-          } else if (errorMessage?.includes('invalid_client')) {
-            reject(new Error('Invalid Google Client ID. Please verify your Client ID in the manifest.json file.'));
-          } else if (errorMessage?.includes('redirect_uri')) {
-            reject(new Error('Redirect URI mismatch. Please add your extension ID to the authorized redirect URIs in Google Cloud Console.'));
-          } else {
-            reject(new Error(`Authentication failed: ${errorMessage}`));
-          }
-          return;
-        }
+    if (password.length < 6) {
+      throw new Error('Password must be at least 6 characters');
+    }
 
-        if (!token) {
-          reject(new Error('No authentication token received. Please try again.'));
-          return;
-        }
+    // Create user object
+    const user: User = {
+      id: this.generateUserId(email),
+      email: email,
+      name: email.split('@')[0], // Use email prefix as name
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(email)}&background=0D8ABC&color=fff`
+    };
 
-        try {
-          const user = await this.getUserInfo(token);
-          await this.storeToken(token);
-          
-          this.updateState({
-            isAuthenticated: true,
-            user,
-            token,
-            isEdge: this.currentState.isEdge
-          });
-
-          resolve(user);
-        } catch (error) {
-          reject(error);
-        }
-      });
+    // Store user
+    await this.storeUser(user);
+    
+    this.updateState({
+      isAuthenticated: true,
+      user
     });
+
+    return user;
   }
 
   async signOut(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (this.currentState.isEdge) {
-        // For Edge, just clear local state
-        this.clearStoredToken().then(() => {
-          this.updateState({
-            isAuthenticated: false,
-            user: null,
-            token: null,
-            isEdge: this.currentState.isEdge
-          });
-          resolve();
-        }).catch(reject);
-        return;
-      }
+    await this.clearStoredUser();
+    this.updateState({
+      isAuthenticated: false,
+      user: null
+    });
+  }
 
-      if (!chrome.identity) {
-        reject(new Error('Chrome Identity API not available'));
-        return;
-      }
+  private generateUserId(email: string): string {
+    // Simple ID generation based on email
+    return btoa(email).replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
+  }
 
-      const token = this.currentState.token;
-      if (!token) {
-        resolve();
-        return;
-      }
+  private async storeUser(user: User): Promise<void> {
+    return new Promise((resolve) => {
+      chrome.storage.local.set({ currentUser: user }, resolve);
+    });
+  }
 
-      chrome.identity.removeCachedAuthToken({ token }, async () => {
-        try {
-          await this.clearStoredToken();
-          this.updateState({
-            isAuthenticated: false,
-            user: null,
-            token: null,
-            isEdge: this.currentState.isEdge
-          });
-          resolve();
-        } catch (error) {
-          reject(error);
-        }
+  private async getStoredUser(): Promise<User | null> {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(['currentUser'], (result) => {
+        resolve(result.currentUser || null);
       });
     });
   }
 
-  private async getUserInfo(token: string): Promise<User> {
-    const response = await fetch(`https://www.googleapis.com/oauth2/v2/userinfo?access_token=${token}`);
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch user info');
-    }
-
-    return await response.json();
-  }
-
-  private async storeToken(token: string): Promise<void> {
+  private async clearStoredUser(): Promise<void> {
     return new Promise((resolve) => {
-      chrome.storage.local.set({ authToken: token }, resolve);
-    });
-  }
-
-  private async getStoredToken(): Promise<string | null> {
-    return new Promise((resolve) => {
-      chrome.storage.local.get(['authToken'], (result) => {
-        resolve(result.authToken || null);
-      });
-    });
-  }
-
-  private async clearStoredToken(): Promise<void> {
-    return new Promise((resolve) => {
-      chrome.storage.local.remove(['authToken'], resolve);
+      chrome.storage.local.remove(['currentUser'], resolve);
     });
   }
 
@@ -205,7 +121,7 @@ class ChromeAuthService {
 }
 
 // Create singleton instance
-export const authService = new ChromeAuthService();
+export const authService = new SimpleAuthService();
 
 // React hook for authentication
 import { useState, useEffect } from 'react';
@@ -220,7 +136,7 @@ export function useAuth() {
 
   return {
     ...authState,
-    signIn: () => authService.signIn(),
+    signIn: (email: string, password: string) => authService.signIn(email, password),
     signOut: () => authService.signOut()
   };
 }

@@ -8,7 +8,7 @@ import { useAuth } from '../lib/auth-service';
 interface PopupProps {}
 
 const Popup: React.FC<PopupProps> = () => {
-  const { isAuthenticated, user, signIn, signOut, isEdge } = useAuth();
+  const { isAuthenticated, user, signIn, signOut } = useAuth();
   const [currentDomain, setCurrentDomain] = useState<string>('Loading...');
   const [siteStatus, setSiteStatus] = useState<SiteStatus>({ status: 'checking' });
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -19,6 +19,8 @@ const Popup: React.FC<PopupProps> = () => {
     timeActive: 0
   });
   const [authError, setAuthError] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
 
   useEffect(() => {
     initializePopup();
@@ -26,22 +28,21 @@ const Popup: React.FC<PopupProps> = () => {
 
   useEffect(() => {
     if (user) {
-      console.log('Chrome Identity User Data:', {
+      console.log('User Data:', {
         id: user.id,
         email: user.email,
-        name: user.name,
-        picture: user.picture,
-        given_name: user.given_name,
-        family_name: user.family_name,
-        verified_email: user.verified_email
+        name: user.name
       });
     }
   }, [user]);
 
-  const handleSignIn = async () => {
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
       setAuthError('');
-      await signIn();
+      await signIn(email, password);
+      setEmail('');
+      setPassword('');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
       setAuthError(errorMessage);
@@ -166,7 +167,7 @@ const Popup: React.FC<PopupProps> = () => {
         {isAuthenticated && user && (
           <div className="flex items-center gap-2">
             <img 
-              src={user.picture} 
+              src={user.avatar} 
               alt="Profile" 
               className="w-6 h-6 rounded-full"
             />
@@ -186,42 +187,46 @@ const Popup: React.FC<PopupProps> = () => {
       {!isAuthenticated ? (
         <Card className="mb-4">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Welcome</CardTitle>
+            <CardTitle className="text-base">Sign In</CardTitle>
             <CardDescription>
-              {isEdge 
-                ? "Authentication is not supported on Microsoft Edge. Please use Google Chrome to sign in."
-                : "Sign in with Google to access your family privacy settings"
-              }
+              Enter your email and password to access family privacy settings
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
-            {!isEdge ? (
-              <>
-                <Button 
-                  onClick={handleSignIn}
-                  className="w-full"
-                  size="sm"
-                >
-                  <User className="h-4 w-4 mr-2" />
-                  Sign In with Google
-                </Button>
-                {authError && (
-                  <div className="text-center p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-xs text-red-800">{authError}</p>
-                    <p className="text-xs text-red-600 mt-1">
-                      Check the setup guide: OAUTH_SETUP_FIX.md
-                    </p>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="text-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm text-yellow-800">
-                  Please switch to Google Chrome to use authentication features.
-                </p>
-                <p className="text-xs text-yellow-600 mt-1">
-                  The extension will work in guest mode with limited features.
-                </p>
+          <CardContent className="space-y-3">
+            <form onSubmit={handleSignIn} className="space-y-3">
+              <div>
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                  minLength={6}
+                />
+              </div>
+              <Button 
+                type="submit"
+                className="w-full"
+                size="sm"
+              >
+                <User className="h-4 w-4 mr-2" />
+                Sign In
+              </Button>
+            </form>
+            {authError && (
+              <div className="text-center p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-xs text-red-800">{authError}</p>
               </div>
             )}
           </CardContent>
@@ -237,7 +242,7 @@ const Popup: React.FC<PopupProps> = () => {
               <CardContent className="space-y-2">
                 <div className="flex items-center gap-2">
                   <img 
-                    src={user.picture} 
+                    src={user.avatar} 
                     alt="Profile" 
                     className="w-8 h-8 rounded-full"
                   />
