@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Profile, SiteStatus, Statistics } from '@/types';
 import { useAuth } from '../lib/auth-service';
+import { EXTERNAL_URLS } from '../lib/config';
 
 interface PopupProps {}
 
@@ -244,6 +245,17 @@ const Popup: React.FC<PopupProps> = () => {
                 <p className="text-xs text-blue-800">Checking authentication...</p>
               </div>
             )}
+            <div className="text-center pt-2 border-t border-gray-200">
+              <p className="text-xs text-gray-600 mb-2">Don't have an account?</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                onClick={() => window.open(EXTERNAL_URLS.SIGNUP, '_blank')}
+              >
+                Sign Up
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (

@@ -17,6 +17,12 @@ export const API_CONFIG = {
   RETRY_ATTEMPTS: 3
 };
 
+// External URLs
+export const EXTERNAL_URLS = {
+  SIGNUP: 'https://privacy-family.vercel.app/signup',
+  PROFILE: 'https://privacy-family.vercel.app/profile'
+};
+
 // Storage keys
 export const STORAGE_KEYS = {
   ACCESS_TOKEN: 'accessToken',

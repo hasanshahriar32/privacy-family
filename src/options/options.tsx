@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Profile } from '@/types';
 import '../globals.css'
 import { useAuth } from '../lib/auth-service';
+import { EXTERNAL_URLS } from '../lib/config';
 
 const Options: React.FC = () => {
   const { isAuthenticated, user, signIn, signOut } = useAuth();
@@ -160,6 +161,16 @@ const Options: React.FC = () => {
                   <p className="text-sm text-red-800">{authError}</p>
                 </div>
               )}
+              <div className="text-center pt-4 border-t border-gray-200">
+                <p className="text-sm text-gray-600 mb-3">Don't have an account?</p>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => window.open(EXTERNAL_URLS.SIGNUP, '_blank')}
+                >
+                  Sign Up
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -219,15 +230,41 @@ const ProfilesTab: React.FC<{ profiles: Profile[]; onProfilesChange: (profiles: 
               />
               <div className="space-y-1">
                 <p className="text-lg font-semibold">
-                  {user.name || 'User'}
+                  {user.name || user.username || 'User'}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {user.email}
                 </p>
+                {user.username && (
+                  <p className="text-xs text-muted-foreground">
+                    @{user.username}
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   User ID: {user.id}
                 </p>
               </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <p className="text-sm text-gray-600 mb-2">
+                Need to update your profile, change password, or delete your account?
+              </p>
+              <p className="text-xs text-gray-500 mb-3">
+                Visit our profile management page to:
+              </p>
+              <ul className="text-xs text-gray-500 mb-3 ml-4 space-y-1">
+                <li>• Update profile information</li>
+                <li>• Change your password</li>
+                <li>• Delete your account</li>
+                <li>• Manage account settings</li>
+              </ul>
+              <Button
+                variant="outline"
+                onClick={() => window.open(EXTERNAL_URLS.PROFILE, '_blank')}
+                className="w-full sm:w-auto"
+              >
+                Manage Profile
+              </Button>
             </div>
           </CardContent>
         </Card>
