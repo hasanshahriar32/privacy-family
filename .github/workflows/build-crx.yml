@@ -47,24 +47,55 @@ jobs:
 
       - name: Upload .crx artifact
         uses: actions/upload-artifact@v4
+        id: upload-crx
         with:
           name: family-privacy-extension-crx-v${{ github.run_number }}
           path: extension.crx
-          retention-days: 30
+          retention-days: 90
 
-      - name: Upload .zip artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: family-privacy-extension-zip-v${{ github.run_number }}
-          path: extension.zip
-          retention-days: 30
+      # - name: Upload .zip artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: family-privacy-extension-zip-v${{ github.run_number }}
+      #     path: extension.zip
+      #     retention-days: 90
 
       - name: Upload dist folder
         uses: actions/upload-artifact@v4
+        id: upload-dist
         with:
           name: family-privacy-extension-dist-v${{ github.run_number }}
           path: dist/
-          retention-days: 30
+          retention-days: 90
+
+      - name: Get artifact URLs
+        id: get-artifacts
+        run: |
+          # Get artifacts for this run
+          ARTIFACTS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts")
+          
+          # Extract artifact IDs
+          CRX_ARTIFACT_ID=$(echo "$ARTIFACTS" | jq -r '.artifacts[] | select(.name | contains("crx")) | .id')
+          DIST_ARTIFACT_ID=$(echo "$ARTIFACTS" | jq -r '.artifacts[] | select(.name | contains("dist")) | .id')
+          
+          # Set outputs
+          echo "crx_artifact_id=$CRX_ARTIFACT_ID" >> $GITHUB_OUTPUT
+          echo "dist_artifact_id=$DIST_ARTIFACT_ID" >> $GITHUB_OUTPUT
+
+      - name: Notify backend of new build
+        run: |
+          curl -X POST https://pf-backend-x6xf.onrender.com/api/v1/extensions \
+            -H "Content-Type: application/json" \
+            -d '{
+              "buildNumber": "v${{ github.run_number }}",
+              "buildDescription": "${{ github.event.head_commit.message }}",
+              "author": "${{ github.actor }}",
+              "commitId": "${{ github.sha }}",
+              "packedExtensionUrl": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.get-artifacts.outputs.crx_artifact_id }}",
+              "unpackedExtensionUrl": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.get-artifacts.outputs.dist_artifact_id }}",
+              "secret": "${{ secrets.BACKEND_AUTH }}"
+            }'
 
       - name: Send .crx file to Telegram
         uses: appleboy/telegram-action@master
