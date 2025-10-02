@@ -3,6 +3,12 @@
   "name": "Family Privacy Extension",
   "version": "2.0.0",
   "description": "A modern browser extension to help families control and monitor web browsing activities with customizable profiles and content filtering.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "admin@paradox-bd.com",
+      "strict_min_version": "109.0"
+    }
+  },
   "permissions": [
     "activeTab",
     "tabs",
@@ -14,7 +20,7 @@
     "https://*/*"
   ],
   "background": {
-    "service_worker": "src/background/index.ts",
+    "scripts": ["src/background/index.ts"],
     "type": "module"
   },
   "content_scripts": [
