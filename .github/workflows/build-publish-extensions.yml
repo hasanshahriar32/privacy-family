@@ -166,18 +166,22 @@ jobs:
       - name: Notify backend of new build
         if: success()
         run: |
+          # Prepare JSON payload with proper escaping
+          COMMIT_MSG=$(echo '${{ github.event.head_commit.message }}' | sed 's/"/\\"/g' | sed "s/'/\\'/g")
+          
           curl -X POST https://pf-backend-x6xf.onrender.com/api/v1/extensions \
             -H "Content-Type: application/json" \
-            -d '{
-              "buildNumber": "v${{ github.run_number }}",
-              "buildDescription": "${{ github.event.head_commit.message }}",
-              "author": "${{ github.actor }}",
-              "commitId": "${{ github.sha }}",
-              "chromeExtensionUrl": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.get-artifacts.outputs.crx_artifact_id }}",
-              "firefoxExtensionUrl": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.get-artifacts.outputs.firefox_artifact_id }}",
-              "unpackedExtensionUrl": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.get-artifacts.outputs.dist_artifact_id }}",
-              "secret": "${{ secrets.BACKEND_AUTH }}"
-            }'
+            -H "Accept: application/json" \
+            -d "{
+              \"buildNumber\": \"${{ github.ref_name }}\",
+              \"buildDescription\": \"${COMMIT_MSG}\",
+              \"author\": \"${{ github.actor }}\",
+              \"commitId\": \"${{ github.sha }}\",
+              \"chromeExtensionUrl\": \"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.get-artifacts.outputs.crx_artifact_id }}\",
+              \"firefoxExtensionUrl\": \"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.get-artifacts.outputs.firefox_artifact_id }}\",
+              \"unpackedExtensionUrl\": \"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.get-artifacts.outputs.dist_artifact_id }}\",
+              \"secret\": \"${{ secrets.BACKEND_AUTH }}\"
+            }" || echo "Backend notification failed, continuing..."
 
       - name: Download Chrome extension for notification
         uses: actions/download-artifact@v4
@@ -191,12 +195,12 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_USER_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          format: MarkdownV2
+          format: markdown
           message: |
-            🚀 *Multi\\-Browser Extension Build Complete\!*
+            🚀 *Multi-Browser Extension Build Complete!*
             
             📦 *Repository:* `${{ github.repository }}`
-            🌿 *Branch:* `${{ github.ref_name }}`
+            🌿 *Version:* `${{ github.ref_name }}`
             💾 *Commit:* `${{ github.sha }}`
             👤 *Author:* `${{ github.actor }}`
             🏗️ *Build:* `#${{ github.run_number }}`
@@ -214,12 +218,12 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_USER_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          format: MarkdownV2
+          format: markdown
           message: |
-            🦊 *Firefox Extension Published\!*
+            🦊 *Firefox Extension Published!*
             
             🏷️ *Version:* `${{ github.ref_name }}`
-            📤 *Status:* Published to Mozilla Add\\-ons
-            ⏰ *Review:* May take 1\\-7 days for public availability
+            📤 *Status:* Published to Mozilla Add-ons
+            ⏰ *Review:* May take 1-7 days for public availability
             
-            🔗 Check status at: [Mozilla Add\\-ons Developer Hub](https://addons.mozilla.org/developers/)
+            🔗 Check status at: [Mozilla Add-ons Developer Hub](https://addons.mozilla.org/developers/)
