@@ -243,8 +243,7 @@ jobs:
               \"buildDescription\": \"${COMMIT_MSG}\",
               \"author\": \"${{ github.actor }}\",
               \"commitId\": \"${{ github.sha }}\",
-              \"chromeExtensionUrl\": \"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.get-artifacts.outputs.crx_artifact_id }}\",
-              \"firefoxExtensionUrl\": \"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.get-artifacts.outputs.firefox_artifact_id }}\",
+              \"packedExtensionUrl\": \"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.get-artifacts.outputs.crx_artifact_id }}\",
               \"unpackedExtensionUrl\": \"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.get-artifacts.outputs.dist_artifact_id }}\",
               \"secret\": \"${{ secrets.BACKEND_AUTH }}\"
             }" || echo "Backend notification failed, continuing..."
@@ -276,20 +275,6 @@ jobs:
             
             ✅ Extensions built for:
             🟡 *Chrome:* Ready for installation
-            🦊 *Firefox:* Published to AMO
+            🦊 *Firefox:* Published to [AMO](https://addons.mozilla.org/en-US/firefox/addon/family-privacy)
           document: ./downloads/extension.crx
-
-      - name: Send Firefox build notification
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_USER_ID }}
-          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          format: markdown
-          message: |
-            🦊 *Firefox Extension Published!*
-            
-            🏷️ *Version:* `${{ github.ref_name }}`
-            📤 *Status:* Published to Mozilla Add-ons
-            ⏰ *Review:* May take 1-7 days for public availability
-            
-            🔗 Check status at: [Mozilla Add-ons Developer Hub](https://addons.mozilla.org/developers/)
+        
