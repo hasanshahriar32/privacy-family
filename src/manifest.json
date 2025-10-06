@@ -13,7 +13,9 @@
     "activeTab",
     "tabs",
     "storage",
-    "scripting"
+    "scripting",
+    "alarms",
+    "declarativeNetRequest"
   ],
   "host_permissions": [
     "http://*/*",
@@ -34,17 +36,17 @@
     "default_popup": "src/popup/index.html",
     "default_title": "Family Privacy Extension",
     "default_icon": {
-      "16": "public/icons/icon16.png",
-      "32": "public/icons/icon32.png",
-      "48": "public/icons/icon48.png",
-      "128": "public/icons/icon128.png"
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
     }
   },
   "icons": {
-    "16": "public/icons/icon16.png",
-    "32": "public/icons/icon32.png",
-    "48": "public/icons/icon48.png",
-    "128": "public/icons/icon128.png"
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   },
   "options_page": "src/options/index.html",
   "web_accessible_resources": [
@@ -52,5 +54,8 @@
       "resources": ["src/blocked/index.html"],
       "matches": ["<all_urls>"]
     }
-  ]
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://pf-backend-x6xf.onrender.com https://privacy-family.vercel.app https://ui-avatars.com;"
+  }
 }

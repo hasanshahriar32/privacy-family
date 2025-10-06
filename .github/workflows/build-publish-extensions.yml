@@ -1,0 +1,225 @@
+name: Build and Publish Extensions
+
+on:
+  push:
+    tags:
+      - 'v*'  # Only trigger on version tags like v1.0.0
+  workflow_dispatch:
+
+jobs:
+  build-chrome:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Build extension
+        run: npm run build
+
+      - name: Install zip and openssl for CRX creation
+        run: sudo apt-get update && sudo apt-get install -y zip openssl
+
+      - name: Generate private key (if not present)
+        run: |
+          if [ ! -f key.pem ]; then openssl genrsa -out key.pem 2048; fi
+
+      - name: Install crx3 for packaging
+        run: npm install -g crx3
+
+      - name: Build .crx file using crx3
+        run: |
+          npm run crx
+
+      - name: Zip extension source for distribution
+        run: |
+          npm run pack
+
+      - name: Upload Chrome .crx artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: chrome-extension-crx-v${{ github.run_number }}
+          path: extension.crx
+          retention-days: 90
+
+      - name: Upload dist folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-dist-v${{ github.run_number }}
+          path: dist/
+          retention-days: 90
+
+  build-firefox:
+    runs-on: ubuntu-latest
+    needs: build-chrome
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build extension for Firefox
+        run: npm run build
+
+      - name: Install web-ext globally
+        run: npm install --global web-ext
+
+      - name: Validate extension for Firefox
+        run: |
+          cd dist
+          web-ext lint
+
+      - name: Build Firefox extension package
+        run: |
+          cd dist
+          web-ext build --artifacts-dir=../web-ext-artifacts/
+
+      - name: Upload Firefox .zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: firefox-extension-zip-v${{ github.run_number }}
+          path: web-ext-artifacts/*.zip
+          retention-days: 90
+
+  publish-firefox:
+    runs-on: ubuntu-latest
+    needs: build-firefox
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build extension for Firefox
+        run: npm run build
+
+      - name: Install web-ext globally
+        run: npm install --global web-ext
+
+      - name: Sign and publish to Mozilla Add-ons
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        run: |
+          cd dist
+          web-ext sign \
+            --api-key=$WEB_EXT_API_KEY \
+            --api-secret=$WEB_EXT_API_SECRET \
+            --channel=listed \
+            --artifacts-dir=../web-ext-artifacts/ \
+            --timeout=300000
+
+      - name: Upload signed Firefox extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: firefox-extension-signed-${{ github.ref_name }}
+          path: web-ext-artifacts/*.xpi
+          retention-days: 90
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: [build-chrome, build-firefox]
+    if: always()
+    steps:
+      - name: Get artifact URLs
+        id: get-artifacts
+        run: |
+          # Get artifacts for this run
+          ARTIFACTS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts")
+          
+          # Extract artifact IDs
+          CRX_ARTIFACT_ID=$(echo "$ARTIFACTS" | jq -r '.artifacts[] | select(.name | contains("chrome-extension-crx")) | .id')
+          FIREFOX_ARTIFACT_ID=$(echo "$ARTIFACTS" | jq -r '.artifacts[] | select(.name | contains("firefox-extension-zip")) | .id')
+          DIST_ARTIFACT_ID=$(echo "$ARTIFACTS" | jq -r '.artifacts[] | select(.name | contains("extension-dist")) | .id')
+          
+          # Set outputs
+          echo "crx_artifact_id=$CRX_ARTIFACT_ID" >> $GITHUB_OUTPUT
+          echo "firefox_artifact_id=$FIREFOX_ARTIFACT_ID" >> $GITHUB_OUTPUT
+          echo "dist_artifact_id=$DIST_ARTIFACT_ID" >> $GITHUB_OUTPUT
+
+      - name: Notify backend of new build
+        if: success()
+        run: |
+          curl -X POST https://pf-backend-x6xf.onrender.com/api/v1/extensions \
+            -H "Content-Type: application/json" \
+            -d '{
+              "buildNumber": "v${{ github.run_number }}",
+              "buildDescription": "${{ github.event.head_commit.message }}",
+              "author": "${{ github.actor }}",
+              "commitId": "${{ github.sha }}",
+              "chromeExtensionUrl": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.get-artifacts.outputs.crx_artifact_id }}",
+              "firefoxExtensionUrl": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.get-artifacts.outputs.firefox_artifact_id }}",
+              "unpackedExtensionUrl": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.get-artifacts.outputs.dist_artifact_id }}",
+              "secret": "${{ secrets.BACKEND_AUTH }}"
+            }'
+
+      - name: Download Chrome extension for notification
+        uses: actions/download-artifact@v4
+        with:
+          name: chrome-extension-crx-v${{ github.run_number }}
+          path: ./downloads/
+
+      - name: Send build notification to Telegram
+        uses: appleboy/telegram-action@master
+        if: success()
+        with:
+          to: ${{ secrets.TELEGRAM_USER_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: MarkdownV2
+          message: |
+            🚀 *Multi\\-Browser Extension Build Complete\!*
+            
+            📦 *Repository:* `${{ github.repository }}`
+            🌿 *Branch:* `${{ github.ref_name }}`
+            💾 *Commit:* `${{ github.sha }}`
+            👤 *Author:* `${{ github.actor }}`
+            🏗️ *Build:* `#${{ github.run_number }}`
+            
+            📝 *Commit Message:*
+            `${{ github.event.head_commit.message }}`
+            
+            ✅ Extensions built for:
+            🟡 *Chrome:* Ready for installation
+            🦊 *Firefox:* Published to AMO
+          document: ./downloads/extension.crx
+
+      - name: Send Firefox build notification
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_USER_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: MarkdownV2
+          message: |
+            🦊 *Firefox Extension Published\!*
+            
+            🏷️ *Version:* `${{ github.ref_name }}`
+            📤 *Status:* Published to Mozilla Add\\-ons
+            ⏰ *Review:* May take 1\\-7 days for public availability
+            
+            🔗 Check status at: [Mozilla Add\\-ons Developer Hub](https://addons.mozilla.org/developers/)

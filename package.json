@@ -11,7 +11,10 @@
     "crx": "npm run build && crx3 -p dist/key.pem -o extension.crx dist",
     "pack": "echo 'Packing extension...' && npx bestzip extension.zip dist/* dist/**/*",
     "zip:dist": "node -e \"const fs=require('fs');const path=require('path');const archiver=require('archiver');const output=fs.createWriteStream('extension.zip');const archive=archiver('zip');output.on('close',()=>console.log('ZIP created:',archive.pointer(),'bytes'));archive.pipe(output);archive.directory('dist/',false);archive.finalize();\"",
-    "clean": "rm -rf dist extension.crx extension.zip"
+    "firefox:build": "npm run build && cd dist && npx web-ext build --artifacts-dir=../web-ext-artifacts/",
+    "firefox:lint": "npm run build && cd dist && npx web-ext lint",
+    "firefox:sign": "npm run build && cd dist && npx web-ext sign --artifacts-dir=../web-ext-artifacts/",
+    "clean": "rm -rf dist extension.crx extension.zip web-ext-artifacts"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.0",
@@ -34,6 +37,7 @@
     "tailwindcss": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.2.2",
-    "vite": "^5.0.8"
+    "vite": "^5.0.8",
+    "web-ext": "^8.10.0"
   }
 }
